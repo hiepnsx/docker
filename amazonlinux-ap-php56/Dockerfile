@@ -1,11 +1,8 @@
-FROM amazonlinux:2
+FROM amazonlinux:2018.03
 MAINTAINER Shin <hiep@verve-inc.jp>
 
 # Set Japanese locale
-RUN yum install -y glibc-langpack-ja && yum clean all
-ENV LANG ja_JP.utf8
-ENV LC_ALL ja_JP.utf8
-RUN ln -snf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+RUN localedef -f UTF-8 -i ja_JP ja_JP.utf8
 
 # Install base package
 RUN yum update -y && yum install -y \
@@ -24,21 +21,22 @@ RUN useradd -m ec2-user \
   && sed -i "s|# %wheel  ALL=(ALL) NOPASSWD: ALL|%wheel  ALL=(ALL) NOPASSWD: ALL|g" /etc/sudoers
 
 # Install extra repo
-RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
-  && yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm \
-  && yum-config-manager --enable epel remi
+RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm \
+  && yum install -y http://rpms.remirepo.net/enterprise/remi-release-6.rpm
 
 # Install apache
 RUN yum update -y && yum install -y httpd mod_ssl && yum clean all
 
-# Install php
+RUN yum update -y && \
+  yum install -y --disablerepo=amzn-main  --enablerepo=epel libwebp \
+  && yum clean all
+
 RUN yum update -y && yum install -y \
   ncurses-compat-libs \
   libxml2 \
   libXpm \
   gmp \
   libicu \
-  t1lib \
   aspell \
   openssl \
   bzip2 \
@@ -60,12 +58,19 @@ RUN yum update -y && yum install -y \
   libc-client \
   libmemcached \
   libtiff \
+  gd-last \
   zip \
   unzip \
+  tar \
   && yum clean all
 
+RUN yum update -y && \
+  yum install -y --enablerepo=remi,remi-php56 t1lib \
+  && yum clean all
+
+
 RUN yum update -y \
-  && yum install -y --disablerepo=amzn2-core --enablerepo=remi-php56 \
+  && yum install -y --disablerepo=amzn-main,amzn-updates --enablerepo=remi,remi-php56 \
   php \
   php-cli \
   php-common \
